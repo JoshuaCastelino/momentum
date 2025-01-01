@@ -14,8 +14,27 @@ class GameScene: SKScene {
     private var spinnyNode : SKShapeNode?
     
     override func didMove(to view: SKView) {
+        // Player sprite
+        let circle = SKShapeNode(circleOfRadius: 50)
+        circle.fillColor = .white
+        circle.strokeColor = .white
+        circle.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
+        circle.zPosition = 1
+        
+        circle.physicsBody = SKPhysicsBody(circleOfRadius: 50)
+        circle.physicsBody?.isDynamic = true
+        circle.physicsBody?.categoryBitMask = 0x1 << 0
+        circle.physicsBody?.collisionBitMask = 0x1 << 1
+        circle.physicsBody?.contactTestBitMask = 0x1 << 1
 
+
+        self.addChild(circle)
+
+    }
     
+    func didBegin(_ contact: SKPhysicsContact) {
+        // Logic for when two physics bodies make contact
+        print("Contact detected between \(contact.bodyA) and \(contact.bodyB)")
     }
     
     
