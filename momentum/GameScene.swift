@@ -13,7 +13,7 @@ struct CollisionCategory {
     static let floor: UInt32 = 0x1 << 1
 }
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
@@ -23,27 +23,6 @@ class GameScene: SKScene {
     private let touchIconRadius: CGFloat = 10
     private var startTouchIcon: SKShapeNode!
     private var pathNode : SKShapeNode = SKShapeNode()
-    
-    
-    override func didMove(to view: SKView) {
-        self.physicsWorld.gravity = CGVector(dx: 0, dy: -5.0)
-        // Player sprite
-        self.player = Player(position: CGPoint(x: self.size.width / 2, y: self.size.height / 2), radius: 20)
-        self.addChild(player!)
-        
-        // Initialise the floor
-        let floor = Floor(size: CGSize(width: self.size.width, height: self.size.height), position: CGPoint(x: 0, y: 0))
-        self.addChild(floor)
-        
-        pathNode.strokeColor = SKColor.yellow
-        pathNode.lineWidth = 2
-        self.addChild(pathNode)
-    }
-    
-    func didBegin(_ contact: SKPhysicsContact) {
-        // Logic for when two physics bodies make contact
-        print("Contact detected between \(contact.bodyA) and \(contact.bodyB)")
-    }
     
     
     func calculateForce(startLocation: CGPoint, endLocation: CGPoint) -> CGVector{
@@ -77,6 +56,48 @@ class GameScene: SKScene {
         return CGVector(dx: forceX, dy: forceY)
     }
     
+    fileprivate func addStartTouchIcon(_ touchStartLocation: CGPoint) {
+        startLocation = touchStartLocation
+        startTouchIcon = SKShapeNode(circleOfRadius: touchIconRadius)
+        startTouchIcon.position = touchStartLocation
+        startTouchIcon.fillColor = SKColor.clear
+        self.addChild(startTouchIcon)
+    }
+    
+    fileprivate func updateDragPath(_ currentTouchLocation: CGPoint) {
+        if pathNode.parent == nil{
+            let path = CGMutablePath()
+            path.move(to: startLocation!)
+            path.addLine(to: currentTouchLocation)
+            pathNode.path = path
+            self.addChild(pathNode)
+        }
+        else{
+            self.removeChildren(in: [pathNode])
+        }
+    }
+    
+    override func didMove(to view: SKView) {
+        // Physics stuff
+        self.physicsWorld.contactDelegate = self
+        self.physicsWorld.gravity = CGVector(dx: 0, dy: -5.0)
+        
+        // Player sprite
+        self.player = Player(position: CGPoint(x: self.size.width / 2, y: self.size.height / 2), radius: 20)
+        self.addChild(player!)
+        
+        // Initialise the floor
+        let floor = Floor(size: CGSize(width: self.size.width, height: self.size.height), position: CGPoint(x: 0, y: 0))
+        self.addChild(floor)
+        
+        pathNode.strokeColor = SKColor.yellow
+        pathNode.lineWidth = 2
+    }
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        // Logic for when two physics bodies make contact
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         // may want to allow more than 1 touch in the future
         if touches.count > 1 { return }
@@ -84,25 +105,14 @@ class GameScene: SKScene {
         else{
             // Set the start location of the touch
             let touchStartLocation = touches.first!.location(in: self)
-            self.startLocation = touchStartLocation
-            startTouchIcon = SKShapeNode(circleOfRadius: touchIconRadius)
-            startTouchIcon.position = touchStartLocation
-            startTouchIcon.fillColor = SKColor.clear
-            self.addChild(startTouchIcon)
-            
-            
+            addStartTouchIcon(touchStartLocation)
         }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         let currentTouchLocation = touches.first!.location(in: self)
-        let path = CGMutablePath()
-        
-        path.move(to: startLocation!)
-        path.addLine(to: currentTouchLocation)
-        pathNode.path = path
-        if pathNode.parent == nil { self.addChild(pathNode) }
+        updateDragPath(currentTouchLocation)
 
     }
     
@@ -112,7 +122,6 @@ class GameScene: SKScene {
         let forceVector = calculateForce(startLocation: startLocation!, endLocation: endLocation)
         print(forceVector)
         player!.physicsBody?.applyImpulse(forceVector)
-        
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
