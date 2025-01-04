@@ -23,8 +23,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private let touchIconRadius: CGFloat = 10
     private var startTouchIcon: SKShapeNode!
     private var pathNode: SKShapeNode = SKShapeNode()
+    
+    private var floorStartPosition: CGPoint?
     private var floor: SKShapeNode?
-    private var floors: SKShapeNode?
+    private var floors: [Floor] = []
     
     private var startHeight: CGFloat = 10
     
@@ -115,9 +117,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.addChild(player!)
         
         // Initialise the floor
-        let floorDimensions = CGSize(width: self.size.width, height: 5)
-        let floorPosition = CGPoint(x: self.size.width / 2, y: startHeight)
-        let floor = Floor(size: floorDimensions, position: floorPosition)
+        let floorWidth = self.size.width
+        let floorHeight: CGFloat = 5
+        let floorDimensions = CGSize(width: floorWidth, height: floorHeight)
+        let floorStartPosition = CGPoint(x: floorWidth / 2, y: startHeight)
+        let floor = Floor(size: floorDimensions, position: floorStartPosition)
+
+        for i in 1...3 {
+            let curFloorPosition = CGPoint(
+                x: floorStartPosition.x + (floorWidth * CGFloat(i)),
+                y: floorStartPosition.y
+            )
+            let curFloor = Floor(size: floorDimensions, position: curFloorPosition)
+            floors.append(curFloor)
+            self.addChild(curFloor)
+        }
+        
         self.addChild(floor)
         
         pathNode.strokeColor = SKColor.yellow
