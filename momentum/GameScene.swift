@@ -23,7 +23,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private let touchIconRadius: CGFloat = 10
     private var startTouchIcon: SKShapeNode!
     private var pathNode : SKShapeNode = SKShapeNode()
+    private var floor : SKShapeNode?
     
+    
+    private var startHeight: CGFloat = 10
     
     func calculateForce(startLocation: CGPoint, endLocation: CGPoint) -> CGVector{
         let deltaX = endLocation.x - startLocation.x
@@ -77,17 +80,43 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    fileprivate func cameraSmoothing(_ camera: SKCameraNode) {
+        // Define the smoothing factor (0.1 = slow, 1.0 = instant)
+        let smoothingFactor: CGFloat = 0.1
+        // Interpolate the camera's position towards the player's position
+        let targetPosition = player!.position
+        let currentPosition = camera.position
+        let newPosition = CGPoint(
+            x: currentPosition.x + (targetPosition.x - currentPosition.x) * smoothingFactor,
+            y: currentPosition.y + (targetPosition.y - currentPosition.y) * smoothingFactor
+        )
+        // Update the camera's position
+        camera.position = newPosition
+    }
+    
     override func didMove(to view: SKView) {
-        // Physics stuff
+        // Physics setup
         self.physicsWorld.contactDelegate = self
         self.physicsWorld.gravity = CGVector(dx: 0, dy: -5.0)
         
+        // Camera setup
+        let cameraNode = SKCameraNode()
+        let minY: CGFloat = self.size.height / 2
+        let maxY: CGFloat = 0
+        
+        self.camera = cameraNode
+        self.addChild(cameraNode)
+        
+        // Create the y constraint
+        let yConstraint = SKConstraint.positionY(SKRange(lowerLimit: minY, upperLimit: maxY))
+        cameraNode.constraints = [yConstraint]
+        
         // Player sprite
-        self.player = Player(position: CGPoint(x: self.size.width / 2, y: self.size.height / 2), radius: 20)
+        self.player = Player(position: CGPoint(x: self.size.width / 2, y: startHeight + 1000), radius: 20)
         self.addChild(player!)
         
         // Initialise the floor
-        let floor = Floor(size: CGSize(width: self.size.width, height: self.size.height), position: CGPoint(x: 0, y: 0))
+        let floor = Floor(size: CGSize(width: self.size.width, height: 10), position: CGPoint(x: 0, y: startHeight))
         self.addChild(floor)
         
         pathNode.strokeColor = SKColor.yellow
@@ -110,13 +139,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
+        if touches.count > 1 { return }
+
         let currentTouchLocation = touches.first!.location(in: self)
         updateDragPath(currentTouchLocation)
 
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if touches.count > 1 { return }
+
         self.removeChildren(in: [startTouchIcon, pathNode])
         let endLocation = touches.first!.location(in: self)
         let forceVector = calculateForce(startLocation: startLocation!, endLocation: endLocation)
@@ -127,8 +159,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
     }
     
-    
     override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+        guard let camera = self.camera else { return }
+
+        cameraSmoothing(camera)
+        floor?.position.x = player!.position.x
+
     }
 }
