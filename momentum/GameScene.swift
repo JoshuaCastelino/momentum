@@ -15,20 +15,20 @@ struct CollisionCategory {
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
-    private var startLocation : CGPoint?
+    private var label: SKLabelNode?
+    private var spinnyNode: SKShapeNode?
+    private var startLocation: CGPoint?
     private var player: Player?
 
     private let touchIconRadius: CGFloat = 10
     private var startTouchIcon: SKShapeNode!
-    private var pathNode : SKShapeNode = SKShapeNode()
-    private var floor : SKShapeNode?
-    
+    private var pathNode: SKShapeNode = SKShapeNode()
+    private var floor: SKShapeNode?
+    private var floors: SKShapeNode?
     
     private var startHeight: CGFloat = 10
     
-    func calculateForce(startLocation: CGPoint, endLocation: CGPoint) -> CGVector{
+    func calculateForce(startLocation: CGPoint, endLocation: CGPoint) -> CGVector {
         let deltaX = endLocation.x - startLocation.x
         let deltaY = endLocation.y - startLocation.y
         let distance = CGFloat(hypot(deltaX, deltaY))
@@ -68,14 +68,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     fileprivate func updateDragPath(_ currentTouchLocation: CGPoint) {
-        if pathNode.parent == nil{
+        if pathNode.parent == nil {
             let path = CGMutablePath()
             path.move(to: startLocation!)
             path.addLine(to: currentTouchLocation)
             pathNode.path = path
             self.addChild(pathNode)
-        }
-        else{
+        } else {
             self.removeChildren(in: [pathNode])
         }
     }
@@ -112,11 +111,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         cameraNode.constraints = [yConstraint]
         
         // Player sprite
-        self.player = Player(position: CGPoint(x: self.size.width / 2, y: startHeight + 1000), radius: 20)
+        self.player = Player(position: CGPoint(x: self.size.width / 2, y: startHeight + 20), radius: 20)
         self.addChild(player!)
         
         // Initialise the floor
-        let floor = Floor(size: CGSize(width: self.size.width, height: 10), position: CGPoint(x: 0, y: startHeight))
+        let floorDimensions = CGSize(width: self.size.width, height: 5)
+        let floorPosition = CGPoint(x: self.size.width / 2, y: startHeight)
+        let floor = Floor(size: floorDimensions, position: floorPosition)
         self.addChild(floor)
         
         pathNode.strokeColor = SKColor.yellow
@@ -129,9 +130,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         // may want to allow more than 1 touch in the future
-        if touches.count > 1 { return }
-        
-        else{
+        if touches.count > 1 { return } else {
             // Set the start location of the touch
             let touchStartLocation = touches.first!.location(in: self)
             addStartTouchIcon(touchStartLocation)
@@ -163,7 +162,5 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         guard let camera = self.camera else { return }
 
         cameraSmoothing(camera)
-        floor?.position.x = player!.position.x
-
     }
 }

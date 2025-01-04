@@ -6,8 +6,6 @@
 //
 
 import SpriteKit
-import SpriteKit
-
 class Floor: SKShapeNode {
     // Custom initializer for the floor
     convenience init(size: CGSize, position: CGPoint) {
@@ -24,12 +22,10 @@ class Floor: SKShapeNode {
 
         // Add a solid physics body to the rectangle
         self.physicsBody = SKPhysicsBody(rectangleOf: size)
-        self.physicsBody?.isDynamic = true // Floor is static
-        self.physicsBody?.allowsRotation = false
+        self.physicsBody?.isDynamic = false
         self.physicsBody?.categoryBitMask = CollisionCategory.floor
         self.physicsBody?.collisionBitMask = CollisionCategory.player
         self.physicsBody?.contactTestBitMask = CollisionCategory.player
-        self.physicsBody?.affectedByGravity = false
 
         // Set position
         self.position = position

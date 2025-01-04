@@ -7,7 +7,6 @@
 
 import SpriteKit
 
-
 class GappedLineNode: SKShapeNode {
     
     init(totalHeight: CGFloat, gapStart: CGFloat, gapHeight: CGFloat) {
