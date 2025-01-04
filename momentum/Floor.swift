@@ -17,7 +17,6 @@ class Floor: SKShapeNode {
         self.path = CGPath(rect: rectPath, transform: nil)
 
         self.strokeColor = .gray
-        self.lineWidth = 2
         self.fillColor = colour
         self.zPosition = 1
 
