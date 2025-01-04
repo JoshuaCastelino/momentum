@@ -26,7 +26,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var floorStartPosition: CGPoint?
     private var floor: SKShapeNode?
+    private var floorWidth: CGFloat?
+    private let floorHeight: CGFloat = 5
+    private var floorDimensions: CGSize?
     private var floors: [Floor] = []
+    private var floorColours: [SKColor] = [.red, .blue, .green]
+    private var floorRotationIndex = 0
     
     private var startHeight: CGFloat = 10
     
@@ -61,7 +66,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         return CGVector(dx: forceX, dy: forceY)
     }
     
-    fileprivate func addStartTouchIcon(_ touchStartLocation: CGPoint) {
+    func addStartTouchIcon(_ touchStartLocation: CGPoint) {
         startLocation = touchStartLocation
         startTouchIcon = SKShapeNode(circleOfRadius: touchIconRadius)
         startTouchIcon.position = touchStartLocation
@@ -69,7 +74,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.addChild(startTouchIcon)
     }
     
-    fileprivate func updateDragPath(_ currentTouchLocation: CGPoint) {
+    func updateDragPath(_ currentTouchLocation: CGPoint) {
         if pathNode.parent == nil {
             let path = CGMutablePath()
             path.move(to: startLocation!)
@@ -81,7 +86,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    fileprivate func cameraSmoothing(_ camera: SKCameraNode) {
+    func cameraSmoothing() {
+        guard let camera = self.camera else { return }
+
         // Define the smoothing factor (0.1 = slow, 1.0 = instant)
         let smoothingFactor: CGFloat = 0.1
         // Interpolate the camera's position towards the player's position
@@ -93,6 +100,50 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         )
         // Update the camera's position
         camera.position = newPosition
+    }
+    
+    func initialiseFloor() {
+        guard let floorWidth else { return }
+        guard let floorDimensions else { return }
+        
+        let floorStartPosition = CGPoint(x: floorWidth / 2, y: startHeight)
+        for i in 0...2 {
+            
+            let curFloorPosition = CGPoint(
+                x: floorStartPosition.x + (floorWidth * CGFloat(i)),
+                y: floorStartPosition.y
+            )
+            
+            let curFloor = Floor(size: floorDimensions, position: curFloorPosition, colour: floorColours[i])
+            floors.append(curFloor)
+            self.addChild(curFloor)
+        }
+    }
+    
+    func updateFloorPositions() {
+        guard let player = self.player else { return }
+        guard let floorWidth = self.floorWidth else { return }
+        guard let floorDimensions = self.floorDimensions else { return }
+        
+        let firstFloor = floors[0]
+        let middleFloor = floors[1]
+        let finalFloor = floors[2]
+        
+        if player.position.x >= middleFloor.position.x {
+            floorRotationIndex += 1
+            let newXPosition: CGFloat = finalFloor.position.x + floorWidth
+            let newPosition = CGPoint(x: newXPosition, y: finalFloor.position.y)
+            let newColour = floorColours[floorRotationIndex % 3]
+            let newFloor = Floor(size: floorDimensions, position: newPosition, colour: newColour)
+            
+            firstFloor.removeFromParent()
+            
+            floors[0] = middleFloor
+            floors[1] = finalFloor
+            floors[2] = newFloor
+            
+            self.addChild(newFloor)
+        }
     }
     
     override func didMove(to view: SKView) {
@@ -116,24 +167,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.player = Player(position: CGPoint(x: self.size.width / 2, y: startHeight + 20), radius: 20)
         self.addChild(player!)
         
-        // Initialise the floor
-        let floorWidth = self.size.width
-        let floorHeight: CGFloat = 5
-        let floorDimensions = CGSize(width: floorWidth, height: floorHeight)
-        let floorStartPosition = CGPoint(x: floorWidth / 2, y: startHeight)
-        let floor = Floor(size: floorDimensions, position: floorStartPosition)
+        // Floor setup
+        floorWidth = self.size.width
+        floorDimensions = CGSize(width: floorWidth!, height: floorHeight)
 
-        for i in 1...3 {
-            let curFloorPosition = CGPoint(
-                x: floorStartPosition.x + (floorWidth * CGFloat(i)),
-                y: floorStartPosition.y
-            )
-            let curFloor = Floor(size: floorDimensions, position: curFloorPosition)
-            floors.append(curFloor)
-            self.addChild(curFloor)
-        }
-        
-        self.addChild(floor)
+        initialiseFloor()
         
         pathNode.strokeColor = SKColor.yellow
         pathNode.lineWidth = 2
@@ -169,13 +207,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         print(forceVector)
         player!.physicsBody?.applyImpulse(forceVector)
     }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-    }
-    
+        
     override func update(_ currentTime: TimeInterval) {
-        guard let camera = self.camera else { return }
-
-        cameraSmoothing(camera)
+        cameraSmoothing()
+        updateFloorPositions()
     }
 }

@@ -7,8 +7,9 @@
 
 import SpriteKit
 class Floor: SKShapeNode {
+    
     // Custom initializer for the floor
-    convenience init(size: CGSize, position: CGPoint) {
+    convenience init(size: CGSize, position: CGPoint, colour: SKColor) {
         self.init()
 
         // Create the rectangle shape
@@ -17,7 +18,7 @@ class Floor: SKShapeNode {
 
         self.strokeColor = .gray
         self.lineWidth = 2
-        self.fillColor = .brown
+        self.fillColor = colour
         self.zPosition = 1
 
         // Add a solid physics body to the rectangle
@@ -30,4 +31,5 @@ class Floor: SKShapeNode {
         // Set position
         self.position = position
     }
+    
 }
