@@ -35,6 +35,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var startHeight: CGFloat = 10
     
+    private let currentSmoothingRate: CGFloat = 0.4
+    private let slowDownFactor = 0.1
+    
     func calculateForce(_ endLocation: CGPoint) -> CGVector {
         guard let touchStartLocation else { return .zero }
         
@@ -93,15 +96,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func cameraSmoothing() {
         guard let camera = self.camera else { return }
-
-        // Define the smoothing factor (0.1 = slow, 1.0 = instant)
-        let smoothingFactor: CGFloat = 0.1
+        
         // Interpolate the camera's position towards the player's position
         let targetPosition = player!.position
         let currentPosition = camera.position
         let newPosition = CGPoint(
-            x: currentPosition.x + (targetPosition.x - currentPosition.x) * smoothingFactor,
-            y: currentPosition.y + (targetPosition.y - currentPosition.y) * smoothingFactor
+            x: currentPosition.x + (targetPosition.x - currentPosition.x) * currentSmoothingRate,
+            y: currentPosition.y + (targetPosition.y - currentPosition.y) * currentSmoothingRate
         )
         // Update the camera's position
         camera.position = newPosition
@@ -147,7 +148,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    func timeScale(factor: CGFloat){
+        guard let player = self.player else { return }
+        player.physicsBody?.velocity.dx *= factor
+        player.physicsBody?.velocity.dy *= factor
+        self.physicsWorld.gravity.dy *= factor
+    }
+    
+    
+    
+    override func didSimulatePhysics() {
+//        cameraSmoothing()
+    }
+    
     override func didMove(to view: SKView) {
+        
         // Physics setup
         self.physicsWorld.contactDelegate = self
         self.physicsWorld.gravity = CGVector(dx: 0, dy: -5.0)
@@ -183,9 +198,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // may want to allow more than 1 touch in the future
+        // BUG: Multiple touches render multiple touchStartIcons
+        // Need to keep track of the touch to prevent double touch issues as a new touch set is created per additional touch
         if touches.count > 1 { return }
         if let cameraNode = camera {
+//            timeScale(factor: slowDownFactor)
             touchStartLocation = touches.first!.location(in: cameraNode)
             addStartTouchIcon(cameraNode)
         }
@@ -203,19 +220,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if touches.count > 1 { return }
-
         self.removeChildren(in: [startTouchIcon, pathNode])
         if let cameraNode = camera {
             let endLocation = touches.first!.location(in: cameraNode)
             let forceVector = calculateForce(endLocation)
             player!.physicsBody?.applyImpulse(forceVector)
             cameraNode.removeChildren(in: [pathNode, startTouchIcon])
-        }
 
+        }
+        // Need to think more about how to scale this up
+//        timeScale(factor: 1/slowDownFactor)
     }
         
     override func update(_ currentTime: TimeInterval) {
-        cameraSmoothing()
         updateFloorPositions()
+        cameraSmoothing()
     }
 }
